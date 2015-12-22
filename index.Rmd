@@ -1,22 +1,35 @@
 ---
-title: "CourseProject"
+title: "Practical Machine Learning - Course Project"
 author: "Ricardo Rios"
-date: "December 21, 2015"
+date: "December 22, 2015"
 output: html_document
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r, echo=FALSE, include=FALSE}
+library(caret)
+library(dplyr)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+training <- read.csv(file="pml-training.csv")
 
-```{r}
-summary(cars)
+testing <- read.csv(file="pml-testing.csv")
+
 ```
 
-You can also embed plots, for example:
+## Executive summary
 
-```{r, echo=FALSE}
-plot(cars)
+
+```{r, echo=FALSE, include=FALSE}
+
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Exploratory analysis and preprocessing 
+
+The training set has 160 variables. The first variable represents a correlative number. The variables user_name, raw_timestamp_part_1,  raw_timestamp_part_2 and cvtd_timestamp will not be taken into account in the modelling. 
+
+
+
+## 
+
+
