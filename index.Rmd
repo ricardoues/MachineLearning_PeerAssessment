@@ -20,6 +20,11 @@ testing <- read.csv(file="pml-testing.csv")
 
 ```{r, echo=FALSE, include=FALSE}
 
+missing.summary <- sapply(testing, function(x) sum(is.na(x))) 
+
+indexs <- sapply(testing, function(x) sum(is.na(x))) > 0 
+
+
 
 ```
 
@@ -28,6 +33,7 @@ testing <- read.csv(file="pml-testing.csv")
 
 The training set has 160 variables. The first variable represents a correlative number. The variables user_name, raw_timestamp_part_1,  raw_timestamp_part_2 and cvtd_timestamp will not be taken into account in the modelling. 
 
+The training set has missing data. 
 
 
 ## 
