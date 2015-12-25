@@ -38,7 +38,7 @@ training <- training[, !indexs.missing]
 
 
 
-The data set has 160 variables and 19622 cases. The first variable represents a correlative number. The variables user_name, raw_timestamp_part_1,  raw_timestamp_part_2 and cvtd_timestamp will not be taken into account in the modelling. There were some variables that contain the string #DIV/0, we had to add extra code in the function read.csv, for the purpose of changing the string #DIV/0 by NA. The data set has missing data and there are `r num.variable.missing`  variables that have missing data. The amount of missing data in these variables varies in the range of 19216 and 19622, therefore we exclude these variable from the analysis. 
+The data set has 160 variables and 19622 cases. The first variable represents a correlative number. The variables user_name, raw_timestamp_part_1,  raw_timestamp_part_2 and cvtd_timestamp will not be taken into account in the modelling. There were some variables that contain the string #DIV/0, we had to add extra code in the function read.csv, for the purpose of changing the string #DIV/0 by NA. The data set has missing data and there are `r num.variable.missing`  variables that have missing data. The amount of missing data in these variables vary in the range of 19216 and 19622, therefore we exclude these variable from the analysis. 
 
 Among all the predictors, the variable new_window is the unique which is qualitative. The chi-squared test of independence between the outcome and this variable is shown below.
 
@@ -87,7 +87,7 @@ trainingPC$classe <- training$classe
 
 
 
-The number of components to capture 90 percent of variance are 19, due to theoretical considerations we prefer working with 19 predictors instead of 53. The scatter plot of the first two principal components along with the outcome are shown in the following figure. 
+The number of components to capture 90 percent of variance are 19, due to theoretical considerations we prefer working with these 19 predictors instead of 53 original predictors. The scatter plot of the first two principal components along with the outcome are shown in the following figure. 
 
 ```{r, fig.width=5, fig.height=5, message=FALSE, echo=FALSE}
 
@@ -148,12 +148,12 @@ cm$overall[1]
 
 ```
 
-Clearly, the model is not suitable for predictions and we are going to try out tree with bagging approach.  
+Clearly, the model is not suitable for predictions and we are going to try out decision tree with bagging approach.  
 
 
-## Decision trees with bagging
+## Decision tree with bagging
 
-Secondly, we chose tree with bagging approach to improve the stability and accuracy. The number of bootstrap replications was 25. The confusion matrix and the global accuracy are shown below. 
+Secondly, we chose decision tree with bagging approach to improve the stability and accuracy. The number of bootstrap replications was 25. The confusion matrix and the global accuracy are shown below. 
  
 
 
@@ -194,6 +194,5 @@ The bagging approach has been a good alternative, achieving a global accuracy of
 
 * The PCA allowed to reduce the dimension of the data and thereby improve the modelling.
 
-* The best alternative to forecast the outcome variable is a bagging approach other alternatives such as random forest could not be analyzed due to limitations of RAM memory. 
-
+* The best alternative to forecast the outcome variable is decision tree with bagging approach other alternatives such as random forest could not be analyzed due to limitations of RAM memory. 
 
