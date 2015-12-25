@@ -8,34 +8,192 @@ output: html_document
 ```{r, echo=FALSE, include=FALSE}
 library(caret)
 library(dplyr)
+library(knitr)
 
-training <- read.csv(file="pml-training.csv")
+training <- read.csv(file="pml-training.csv", na.strings=c('#DIV/0', '', 'NA', "#DIV/0!") ,stringsAsFactors = F)
 
-testing <- read.csv(file="pml-testing.csv")
+testing <- read.csv(file="pml-testing.csv", na.strings=c('#DIV/0', '', 'NA', "#DIV/0!") ,stringsAsFactors = F)
 
 ```
 
-## Executive summary
+
+
+
+## Exploratory analysis 
 
 
 ```{r, echo=FALSE, include=FALSE}
 
-missing.summary <- sapply(testing, function(x) sum(is.na(x))) 
+missing.summary <- sapply(training, function(x) sum(is.na(x))) 
 
-indexs <- sapply(testing, function(x) sum(is.na(x))) > 0 
+indexs.missing <- sapply(training, function(x) sum(is.na(x))) > 0 
 
-num.variable.missing <- length(missing.summary[indexs])
+num.variable.missing <- length(missing.summary[indexs.missing])
+
+training <- training[, !indexs.missing]
+
 
 ```
 
 
-## Exploratory analysis and preprocessing 
-
-The training set has 160 variables. The first variable represents a correlative number. The variables user_name, raw_timestamp_part_1,  raw_timestamp_part_2 and cvtd_timestamp will not be taken into account in the modelling. 
-
-The training set has missing data and there are `r num.variable.missing`  variables. These variables have exactly 20 missing data. To solve the problem with the missing data, we use the function 
 
 
-## 
+The data set has 160 variables and 19622 cases. The first variable represents a correlative number. The variables user_name, raw_timestamp_part_1,  raw_timestamp_part_2 and cvtd_timestamp will not be taken into account in the modelling. There were some variables that contain the string #DIV/0, we had to add extra code in the function read.csv, for the purpose of changing the string #DIV/0 by NA. The data set has missing data and there are `r num.variable.missing`  variables that have missing data. The amount of missing data in these variables varies in the range of 19216 and 19622, therefore we exclude these variable from the analysis. 
+
+Among all the predictors, the variable new_window is the unique which is qualitative. The chi-squared test of independence between the outcome and this variable is shown below.
+
+```{r, echo=FALSE}
+
+table.win.classe <- with(training, table(new_window, classe)) 
+
+chisq.test(table.win.classe)
+
+
+```
+
+
+The p-value is high, therefore there is no relation between the outcome and the variable new_window, so the variable new_window is excluded from the analysis. In addition to that, there is no near-zero predictors whereby the remaining predictors are 53. 
+
+
+```{r, echo=FALSE, include=FALSE}
+
+index.excluded <- c(rep(TRUE, 6), rep(FALSE, 54)) 
+
+training <- training[ , !index.excluded]
+
+nsv <- nearZeroVar(training, saveMetrics = TRUE)
+nsv 
+
+
+```
+
+
+
+## Principal component analysis 
+
+Due to the large number of predictors, we perform a principal component analysis (PCA) on the predictors before using them as inputs into a decision tree model. Since skewness and the magnitude of the variables influence the resulting PCA, we applied box-cox transformation, center and scale the variables prior to the application of PCA. The cumulative percent of variance to be retained by PCA was 0.90.     
+
+```{r, echo=FALSE, include=FALSE}
+
+preProc <- preProcess(training[ , 1:53], method = c("BoxCox", "center", "scale",  "pca"), thresh = 0.90)
+trainingPC <- predict(preProc, training[ , 1:53])
+
+trainingPC$classe <- training$classe
+
+
+```
+
+
+
+
+
+The number of components to capture 90 percent of variance are 19, due to theoretical considerations we prefer working with 19 predictors instead of 53. The scatter plot of the first two principal components along with the outcome are shown in the following figure. 
+
+```{r, fig.width=5, fig.height=5, message=FALSE, echo=FALSE}
+
+pca.plot <- data.frame(PC1 = trainingPC[ , 1], PC2 = trainingPC[ , 2], classe = training[ , 54])
+
+p <-  ggplot(pca.plot, aes(x=PC1, y=PC2, shape=classe))
+
+p <- p +  geom_point()
+
+p <- p + stat_binhex()  ## It is neccesary the package hexbin
+
+p <-  p +  scale_shape_manual(values=c(1,2,3,4,5))
+
+p 
+
+```
+
+
+## Decision tree with data splitting 
+
+Firstly, we use data splitting to model the outcome variable. The data was splitted into training data (80% of the data) and testing data. This approach can be suitable since that the data is large and the test dataset can provide a meaningful estimation of performance.   
+
+```{r, echo=FALSE, include=FALSE, cache=TRUE}
+
+trainIndex <- createDataPartition(training$classe, p=0.80, list=FALSE)
+
+data_train <- trainingPC[ trainIndex,]
+
+data_test  <-  trainingPC[-trainIndex,]
+
+modFit <- train(classe ~ ., method="rpart", data=trainingPC)
+
+pred <- predict(modFit, data_test)
+
+
+cm <- confusionMatrix(pred, data_test$classe)
+
+
+
+```
+
+
+The confusion matrix and the global accuracy on the test set are shown below.
+
+
+```{r, echo=FALSE}
+
+
+kable(cm$table, digits=2)
+
+
+```
+
+
+```{r, echo=FALSE}
+
+cm$overall[1]
+
+```
+
+Clearly, the model is not suitable for predictions and we are going to try out tree with bagging approach.  
+
+
+## Decision trees with bagging
+
+Secondly, we chose tree with bagging approach to improve the stability and accuracy. The number of bootstrap replications was 25. The confusion matrix and the global accuracy are shown below. 
+ 
+
+
+```{r cachedChunk, echo=FALSE, include=FALSE, cache=TRUE}
+
+modFit <- train(classe ~ ., method="treebag", data=trainingPC, allowParallel=TRUE) # We must install the package ipred
+
+pred <- predict(modFit, trainingPC)
+
+cm <- confusionMatrix(pred, trainingPC$classe)
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+
+kable(cm$table, digits=2)
+
+
+```
+
+
+```{r, echo=FALSE}
+
+cm$overall[1]
+
+```
+  
+  
+The bagging approach has been a good alternative, achieving a global accuracy of 0.99, but it is difficult to interpret the final bagged classifier.
+
+## Conclusions 
+
+* It is always advisable to perform an exploratory analysis before modelling.
+
+* The PCA allowed to reduce the dimension of the data and thereby improve the modelling.
+
+* The best alternative to forecast the outcome variable is a bagging approach other alternatives such as random forest could not be analyzed due to limitations of RAM memory. 
 
 
